@@ -6,4 +6,4 @@ app.db
 env
 venv
 *.sublime*
-./charts/*
+charts/*
