@@ -27,7 +27,7 @@ class HTMLRead(Resource):
     def get(self,file):
         return send_file(f'C:\\Users\\totti\\VSCodeProjects\\Flask\\AutoChartBackend\\charts\\{file}')
 
-api.add_resource(HTMLRead, 'htmlread/<string:file>')
+api.add_resource(HTMLRead, '/htmlread/<string:file>')
 
 if __name__ == '__main__':
     app.run(debug=True)
