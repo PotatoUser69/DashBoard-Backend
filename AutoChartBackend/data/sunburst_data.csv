@@ -1,0 +1,13 @@
+Region,Product,Subproduct,Sales
+North America,Electronics,Smartphones,10000
+North America,Electronics,Laptops,15000
+North America,Clothing,T-Shirts,5000
+North America,Clothing,Jeans,8000
+Europe,Electronics,Smartphones,12000
+Europe,Electronics,Laptops,18000
+Europe,Clothing,T-Shirts,6000
+Europe,Clothing,Jeans,10000
+Asia,Electronics,Smartphones,15000
+Asia,Electronics,Laptops,20000
+Asia,Clothing,T-Shirts,7000
+Asia,Clothing,Jeans,12000
