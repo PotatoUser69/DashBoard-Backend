@@ -18,9 +18,9 @@ The server is running in the port 5000
 
 - API endpoint's::
 
-	#/datasets::
+	/datasets
         	return a list of all CSV datasets in the folder data
-	#/chart/<string:chart>::
+	/chart/<string:chart>
         	return the name of the main and secondary chart choosen by the programme
-    	#/htmlread/<string:file>::
+    	/htmlread/<string:file>
         	return the HTML file to the front-end to be displayed
