@@ -20,13 +20,16 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 
 def perform_dimensionality_reduction(data):
-    features=data[get_feature_importance(data,threshold=.09)[1]]
+    s=(1/(len(data.columns)*2))
+    features=data[get_feature_importance(data,threshold=s)[1]]
     return features
 
 def choose_chart(data):
     #verify if data is categorical and also numerical
     if not dataset_has_sub_groups(data) and large_dataset(data):
-        data=perform_dimensionality_reduction(data)
+        temp_data=perform_dimensionality_reduction(data)
+        if len(temp_data.columns)>1:
+            data=temp_data
     #verify if data is categorical and also numerical
     if dataset_is_categories_and_numeric_values(data):
         #verify if data is time series
@@ -142,7 +145,7 @@ def CountryMap(data,ssecondary=False):
 
     if ssecondary==True:
         return file_path
-    return [file_path,'treemap.html']
+    return [file_path,bar(data,True)]
 
 def parallelCoordinates(data,ssecondary=False):
     categories = list(data.select_dtypes(include=['object']).columns)
@@ -177,7 +180,7 @@ def parallelCoordinates(data,ssecondary=False):
 
     if ssecondary==True:
         return file_path
-    return [file_path,'treemap.html']
+    return [file_path,'parallel_coordinates.html']
 
 def treemap(data,ssecondary=False):
     path=list(data.select_dtypes(include=['object']).columns)
@@ -227,7 +230,7 @@ def box(data,ssecondary=False):
 
     if ssecondary==True:
         return file_path
-    return [file_path,'treemap.html']
+    return [file_path,'box.html']
 
 def scatter(data,ssecondary=False):
     [xlabel, ylabel] = data.columns
@@ -279,7 +282,7 @@ def heatmap(data,ssecondary=False):
         f.write('</style>') 
     if ssecondary==True:
         return file_path
-    return [file_path,'treemap.html']          
+    return [file_path,radar(data,True)]          
 
 def radar(data,ssecondary=False):
     categorical_column = data.select_dtypes(include=['object']).columns[0]
@@ -316,7 +319,7 @@ def radar(data,ssecondary=False):
 
     if ssecondary==True:
         return file_path
-    return [file_path,'treemap.html']          
+    return [file_path,heatmap(data,True)]          
 def bubble(data,ssecondary=False):
     numeric_columns = data.select_dtypes(include=['number']).columns
     x = data[numeric_columns[0]]
@@ -356,7 +359,7 @@ def bubble(data,ssecondary=False):
 
     if ssecondary==True:
         return file_path
-    return [file_path,'treemap.html']          
+    return [file_path,'bubble.html']          
 def bubble_one_cat(data,ssecondary=False):
     numeric_columns = data.select_dtypes(include=['number']).columns
     categorie_column = data.select_dtypes(include=['object']).columns[0]
@@ -396,7 +399,7 @@ def bubble_one_cat(data,ssecondary=False):
 
     if ssecondary==True:
         return file_path
-    return [file_path,'treemap.html']          
+    return [file_path,bubble(data,True)]          
 def line(data,ssecondary=False):
     categorical_columns = data.select_dtypes(include=['object']).columns
     numeric_columns = data.select_dtypes(include=['number']).columns
@@ -567,7 +570,7 @@ def grouped_bar(data,ssecondary=False):
 
     if ssecondary==True:
         return file_path
-    return [file_path,'treemap.html']    
+    return [file_path,line(data,True)]    
 def donut(data,ssecondary=False):
     categorical_columns = data.select_dtypes(include=['object']).columns
     numeric_columns = data.select_dtypes(include=['number']).columns
@@ -815,6 +818,7 @@ def get_feature_importance(data,threshold=.05):
 
     # create DataFrame using data
     data_imp = pd.DataFrame(feat_list, columns =['FEATURE', 'IMPORTANCE']).sort_values(by='IMPORTANCE', ascending=False)
+    print(data_imp)
     return [data_imp,included_feats]
 
 def get_least_significant_numerical_column(nums,data):
