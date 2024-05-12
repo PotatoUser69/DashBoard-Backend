@@ -7,7 +7,7 @@ Base Skeleton to start your application using Flask-AppBuilder
 
 - Run it::
 
-	# Go into project.
+	# Go into project
 	$ cd AutoChartBackend
 	# Run api
 	$ pyhton api.py
@@ -19,8 +19,8 @@ The server is running in the port 5000
 - API endpoint's::
 
 	#/datasets::
-        	return a list of all CSV datasets in the folder data.
+        	return a list of all CSV datasets in the folder data
 	#/chart/<string:chart>::
-        	return the name of the main and secondary chart choosen by the programme.
+        	return the name of the main and secondary chart choosen by the programme
     	#/htmlread/<string:file>::
-        	return the HTML file to the front-end to be displayed.
+        	return the HTML file to the front-end to be displayed
