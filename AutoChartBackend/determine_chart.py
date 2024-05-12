@@ -1,11 +1,8 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from datetime import datetime
 import os
 import pycountry
-import mplcursors
-import seaborn as sns
 import plotly.graph_objects as go
 import plotly.express as px
 from geonamescache import GeonamesCache
@@ -17,7 +14,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.compose import make_column_selector as selector
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
+from sklearn.preprocessing import OrdinalEncoder
 
 def perform_dimensionality_reduction(data):
     s=(1/(len(data.columns)*2))

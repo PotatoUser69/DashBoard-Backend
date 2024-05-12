@@ -1,8 +1,8 @@
 pandas
 numpy
 pycountry
-mplcursors
-seaborn
 plotly
 geonamescache
 scikit-learn
+flask-appbuilder
+flask-restful
