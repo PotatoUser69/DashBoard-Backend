@@ -21,12 +21,11 @@ from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 
 def perform_dimensionality_reduction(data):
     features=data[get_feature_importance(data,threshold=.09)[1]]
-    # print(features)
     return features
 
 def choose_chart(data):
     #verify if data is categorical and also numerical
-    if not dataset_is_categorical(data) and not dataset_has_sub_groups(data):
+    if not dataset_has_sub_groups(data) and large_dataset(data):
         data=perform_dimensionality_reduction(data)
     #verify if data is categorical and also numerical
     if dataset_is_categories_and_numeric_values(data):
@@ -119,7 +118,7 @@ def histogram(data,ssecondary=False):
 
     if ssecondary==True:
         return file_path
-    return [file_path,scatter(data,True)]
+    return [file_path,'histogram.html']
 
 def CountryMap(data,ssecondary=False):
     country_column = data.select_dtypes(include=['object']).columns[0]
@@ -143,7 +142,7 @@ def CountryMap(data,ssecondary=False):
 
     if ssecondary==True:
         return file_path
-    return [file_path,bar(data,True)]
+    return [file_path,'treemap.html']
 
 def parallelCoordinates(data,ssecondary=False):
     categories = list(data.select_dtypes(include=['object']).columns)
@@ -178,7 +177,7 @@ def parallelCoordinates(data,ssecondary=False):
 
     if ssecondary==True:
         return file_path
-    return [file_path,'parallel_coordinates.html']
+    return [file_path,'treemap.html']
 
 def treemap(data,ssecondary=False):
     path=list(data.select_dtypes(include=['object']).columns)
@@ -228,7 +227,7 @@ def box(data,ssecondary=False):
 
     if ssecondary==True:
         return file_path
-    return [file_path,'box.html']
+    return [file_path,'treemap.html']
 
 def scatter(data,ssecondary=False):
     [xlabel, ylabel] = data.columns
@@ -280,7 +279,7 @@ def heatmap(data,ssecondary=False):
         f.write('</style>') 
     if ssecondary==True:
         return file_path
-    return [file_path,radar(data,True)]          
+    return [file_path,'treemap.html']          
 
 def radar(data,ssecondary=False):
     categorical_column = data.select_dtypes(include=['object']).columns[0]
@@ -317,7 +316,7 @@ def radar(data,ssecondary=False):
 
     if ssecondary==True:
         return file_path
-    return [file_path,heatmap(data,True)]          
+    return [file_path,'treemap.html']          
 def bubble(data,ssecondary=False):
     numeric_columns = data.select_dtypes(include=['number']).columns
     x = data[numeric_columns[0]]
@@ -357,7 +356,7 @@ def bubble(data,ssecondary=False):
 
     if ssecondary==True:
         return file_path
-    return [file_path,'bubble.html']          
+    return [file_path,'treemap.html']          
 def bubble_one_cat(data,ssecondary=False):
     numeric_columns = data.select_dtypes(include=['number']).columns
     categorie_column = data.select_dtypes(include=['object']).columns[0]
@@ -397,7 +396,7 @@ def bubble_one_cat(data,ssecondary=False):
 
     if ssecondary==True:
         return file_path
-    return [file_path,bubble(data,True)]          
+    return [file_path,'treemap.html']          
 def line(data,ssecondary=False):
     categorical_columns = data.select_dtypes(include=['object']).columns
     numeric_columns = data.select_dtypes(include=['number']).columns
@@ -568,7 +567,7 @@ def grouped_bar(data,ssecondary=False):
 
     if ssecondary==True:
         return file_path
-    return [file_path,line(data,True)]    
+    return [file_path,'treemap.html']    
 def donut(data,ssecondary=False):
     categorical_columns = data.select_dtypes(include=['object']).columns
     numeric_columns = data.select_dtypes(include=['number']).columns
@@ -597,11 +596,11 @@ def donut(data,ssecondary=False):
     return [file_path,bar(data,True)]          
 
 def dataset_has_sub_groups(data):
-    unique_combinations = data.groupby(list(data.columns)).size().reset_index().rename(columns={0:'count'})
-    if len(unique_combinations) > 1:
-        return True
-    else:
-        return False
+    categorical_columns = data.select_dtypes(include=['object']).columns
+    return len(categorical_columns)>1 and not dataset_has_no_duplicate_values(data)
+    
+def large_dataset(data):
+    return len(data.columns)>4
 
 def dataset_has_no_duplicate_values(data):
     categorical_columns = data.select_dtypes(include=['object']).columns
