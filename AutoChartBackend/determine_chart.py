@@ -9,6 +9,7 @@ import seaborn as sns
 import plotly.graph_objects as go
 import plotly.express as px
 from geonamescache import GeonamesCache
+import re
 
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -18,7 +19,15 @@ from sklearn.compose import make_column_selector as selector
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 
+def perform_dimensionality_reduction(data):
+    features=data[get_feature_importance(data,threshold=.09)[1]]
+    # print(features)
+    return features
+
 def choose_chart(data):
+    #verify if data is categorical and also numerical
+    if not dataset_is_categorical(data) and not dataset_has_sub_groups(data):
+        data=perform_dimensionality_reduction(data)
     #verify if data is categorical and also numerical
     if dataset_is_categories_and_numeric_values(data):
         #verify if data is time series
@@ -62,15 +71,15 @@ def choose_chart(data):
             if dataset_is_one_numiric(data):
                 #verify if data have categories and subcategories
                 if dataset_has_sub_groups(data):
-                    return sunburst(data)
+                    return treemap(data)
         elif dataset_is_three_categorie(data) and dataset_has_sub_groups(data) and dataset_is_one_numiric(data):
-            return sunburst(data)
+            return treemap(data)
         elif dataset_is_several_categorie(data):
             #verify if data containe one set of numerical values or several
             if dataset_is_one_numiric(data):
                 #verify if data have categories and subcategories
                 if dataset_has_sub_groups(data):
-                    return treemap(data)
+                    return sunburst(data)
     #verify if data containe only numerical data
     elif dataset_is_numeric(data) and not dataset_is_categorical(data):
         #verify if data containe one set of numerical values or several
@@ -90,7 +99,7 @@ def choose_chart(data):
         return parallelCoordinates(data)
     return choose_chart(remove_least_important_column(data))
 
-def histogram(data):
+def histogram(data,ssecondary=False):
     fig = px.histogram(data, x=data.columns[0], title="Histogram",
                        barmode='overlay', # to overlay bars
                        opacity=0.7, # to make bars transparent
@@ -108,9 +117,11 @@ def histogram(data):
 
     fig.write_html(os.path.join(save_dir, file_path))   # Save the plot to an HTML file
 
-    return file_path
+    if ssecondary==True:
+        return file_path
+    return [file_path,scatter(data,True)]
 
-def CountryMap(data):
+def CountryMap(data,ssecondary=False):
     country_column = data.select_dtypes(include=['object']).columns[0]
     value_column = data.select_dtypes(include=['number']).columns[0]
     
@@ -130,9 +141,11 @@ def CountryMap(data):
 
     fig.write_html(os.path.join(save_dir, file_path))   # Save the plot to an HTML file
 
-    return file_path
+    if ssecondary==True:
+        return file_path
+    return [file_path,bar(data,True)]
 
-def parallelCoordinates(data):
+def parallelCoordinates(data,ssecondary=False):
     categories = list(data.select_dtypes(include=['object']).columns)
     cat_len = [len(set(data[i])) for i in  categories]
     dimensions = []
@@ -163,9 +176,11 @@ def parallelCoordinates(data):
     file_path = 'parallel_coordinates.html'
     fig.write_html(os.path.join(save_dir, file_path))  # Save the plot to an HTML file
 
-    return file_path
+    if ssecondary==True:
+        return file_path
+    return [file_path,'parallel_coordinates.html']
 
-def treemap(data):
+def treemap(data,ssecondary=False):
     path=list(data.select_dtypes(include=['object']).columns)
     values=data.select_dtypes(include=['number']).columns[0]
     fig = px.treemap(data, path=path, values=values,color=values,color_continuous_scale=['#6BAED6', '#08306B'])
@@ -178,9 +193,11 @@ def treemap(data):
     file_path = 'treemap.html'
     fig.write_html(os.path.join(save_dir, file_path))  # Save the plot to an HTML file
 
-    return file_path
+    if ssecondary==True:
+        return file_path
+    return [file_path,sunburst(data,True)]
 
-def sunburst(data):
+def sunburst(data,ssecondary=False):
     path=list(data.select_dtypes(include=['object']).columns)
     values=data.select_dtypes(include=['number']).columns[0]
     fig = px.sunburst(data, path=path,  
@@ -192,10 +209,11 @@ def sunburst(data):
     # Define the file path for saving the plot
     file_path = 'sunburst.html'
     fig.write_html(os.path.join(save_dir, file_path))  # Save the plot to an HTML file
+    if ssecondary==True:
+        return file_path
+    return [file_path,treemap(data,True)]
 
-    return file_path
-
-def box(data):
+def box(data,ssecondary=False):
     fig = px.box(data, title="Box Plot")
     fig.update_layout(xaxis_tickangle=-90,  # Rotate x-axis labels
                       font=dict(size=14),  # Font size
@@ -208,9 +226,11 @@ def box(data):
     file_path = 'box.html'
     fig.write_html(os.path.join(save_dir, file_path))  # Save the plot to an HTML file
 
-    return file_path
+    if ssecondary==True:
+        return file_path
+    return [file_path,'box.html']
 
-def scatter(data):
+def scatter(data,ssecondary=False):
     [xlabel, ylabel] = data.columns
     fig = px.scatter(data, x=xlabel, y=ylabel, title="Scatter Plot")
     fig.update_traces(marker=dict(size=5, opacity=0.5))  # Adjust marker size and opacity
@@ -222,9 +242,11 @@ def scatter(data):
     file_path = 'scatter.html'
     fig.write_html(os.path.join(save_dir, file_path))  # Save the plot to an HTML file
 
-    return file_path  
+    if ssecondary==True:
+        return file_path
+    return [file_path,histogram(data,True)]  
 
-def heatmap(data):
+def heatmap(data,ssecondary=False):
     categorical_column = data.select_dtypes(include=['object']).columns[0]
     data.reset_index(inplace=True)  # Reset index so the categorical column can be accessed
     fig = go.Figure(data=go.Heatmap(
@@ -256,9 +278,11 @@ def heatmap(data):
         f.write('display: flex;justify-content: center;')  # Example CSS property
         f.write('}')
         f.write('</style>') 
-    return file_path          
+    if ssecondary==True:
+        return file_path
+    return [file_path,radar(data,True)]          
 
-def radar(data):
+def radar(data,ssecondary=False):
     categorical_column = data.select_dtypes(include=['object']).columns[0]
     labels = list(data[categorical_column])
     categories = list(data.select_dtypes(include=['number']).columns)
@@ -291,8 +315,10 @@ def radar(data):
     file_path = 'radar.html'
     fig.write_html(os.path.join(save_dir, file_path))  # Save the plot to an HTML file
 
-    return file_path          
-def bubble(data):
+    if ssecondary==True:
+        return file_path
+    return [file_path,heatmap(data,True)]          
+def bubble(data,ssecondary=False):
     numeric_columns = data.select_dtypes(include=['number']).columns
     x = data[numeric_columns[0]]
     y = data[numeric_columns[1]]
@@ -329,8 +355,10 @@ def bubble(data):
     file_path = 'bubble.html'
     fig.write_html(os.path.join(save_dir, file_path))  # Save the plot to an HTML file
 
-    return file_path          
-def bubble_one_cat(data):
+    if ssecondary==True:
+        return file_path
+    return [file_path,'bubble.html']          
+def bubble_one_cat(data,ssecondary=False):
     numeric_columns = data.select_dtypes(include=['number']).columns
     categorie_column = data.select_dtypes(include=['object']).columns[0]
 
@@ -367,8 +395,10 @@ def bubble_one_cat(data):
     file_path = 'bubble_one.html'
     fig.write_html(os.path.join(save_dir, file_path))  # Save the plot to an HTML file
 
-    return file_path          
-def line(data):
+    if ssecondary==True:
+        return file_path
+    return [file_path,bubble(data,True)]          
+def line(data,ssecondary=False):
     categorical_columns = data.select_dtypes(include=['object']).columns
     numeric_columns = data.select_dtypes(include=['number']).columns
 
@@ -396,23 +426,33 @@ def line(data):
     file_path = 'line.html'
     fig.write_html(os.path.join(save_dir, file_path))  # Save the plot to an HTML file
 
-    return file_path        
-def area(data):
+    if ssecondary==True:
+        return file_path
+    return [file_path,area(data,True)]   
+
+def area(data,ssecondary=False):
     numeric_columns = data.select_dtypes(include=['number']).columns
     categorical_columns = data.select_dtypes(include=['object']).columns
 
     fig = go.Figure()
 
-    # Add the filled area trace
-    fig.add_trace(go.Scatter(
-        x=data[categorical_columns[0]],
-        y=data[numeric_columns[0]],
-        mode='lines',  # Display only lines for filled area
-        fill='tozeroy',  # Fill area to zero y-axis
-        fillcolor="rgba(173, 216, 230, 0.4)",  # Set the fill color
-        line=dict(color="Slateblue"),  # Set line color
-        name=numeric_columns[0]  # Set the trace name
-    ))
+    colors = px.colors.qualitative.Plotly
+
+    # Iterate over all numeric columns
+    for i, col in enumerate(numeric_columns):
+        color = colors[i % len(colors)]  # Get color from palette
+        r, g, b = re.findall('(..)', color[1:])
+        rgba_color= f'rgba({int(r, 16)}, {int(g, 16)}, {int(b, 16)}, {0.4})'
+        # Add the filled area trace
+        fig.add_trace(go.Scatter(
+            x=data[categorical_columns[0]],
+            y=data[col],
+            mode='lines',  # Display only lines for filled area
+            fill='tozeroy',  # Fill area to zero y-axis
+            fillcolor=rgba_color,  # Set the fill color
+            line=dict(color=color),  # Set line color
+            name=col  # Set the trace name
+        ))
 
     fig.update_layout(
         xaxis_title=categorical_columns[0],
@@ -428,8 +468,10 @@ def area(data):
     file_path = 'area.html'
     fig.write_html(os.path.join(save_dir, file_path))  # Save the plot to an HTML file
 
-    return file_path  
-def pie(data):
+    if ssecondary==True:
+        return file_path
+    return [file_path,line(data,True)]  
+def pie(data,ssecondary=False):
     categorical_columns = data.select_dtypes(include=['object']).columns
     numeric_columns = data.select_dtypes(include=['number']).columns
     num_data = data[numeric_columns[0]]
@@ -452,8 +494,10 @@ def pie(data):
     file_path = 'pie.html'
     fig.write_html(os.path.join(save_dir, file_path))  # Save the plot to an HTML file
 
-    return file_path          
-def bar(data):
+    if ssecondary==True:
+        return file_path
+    return [file_path,bar(data,True)]          
+def bar(data,ssecondary=False):
     categorical_columns = data.select_dtypes(include=['object']).columns
     numeric_columns = data.select_dtypes(include=['number']).columns
     num_data = data[numeric_columns[0]]
@@ -479,9 +523,11 @@ def bar(data):
     file_path = 'bar.html'
     fig.write_html(os.path.join(save_dir, file_path))  # Save the plot to an HTML file
 
-    return file_path 
+    if ssecondary==True:
+        return file_path
+    return [file_path,pie(data,True)] 
 
-def grouped_bar(data):
+def grouped_bar(data,ssecondary=False):
     categorical_columns = data.select_dtypes(include=['object']).columns
     numeric_columns = data.select_dtypes(include=['number']).columns
     
@@ -520,8 +566,10 @@ def grouped_bar(data):
     file_path = 'grouped.html'
     fig.write_html(os.path.join(save_dir, file_path))  # Save the plot to an HTML file
 
-    return file_path    
-def donut(data):
+    if ssecondary==True:
+        return file_path
+    return [file_path,line(data,True)]    
+def donut(data,ssecondary=False):
     categorical_columns = data.select_dtypes(include=['object']).columns
     numeric_columns = data.select_dtypes(include=['number']).columns
     num_data = data[numeric_columns[0]]
@@ -544,7 +592,9 @@ def donut(data):
     file_path = 'donut.html'
     fig.write_html(os.path.join(save_dir, file_path))  # Save the plot to an HTML file
 
-    return file_path          
+    if ssecondary==True:
+        return file_path
+    return [file_path,bar(data,True)]          
 
 def dataset_has_sub_groups(data):
     unique_combinations = data.groupby(list(data.columns)).size().reset_index().rename(columns={0:'count'})
@@ -732,7 +782,8 @@ def dataset_cleaning(data):
 
     return data
 
-def get_feature_importance(data):
+def get_feature_importance(data,threshold=.05):
+    data = data.dropna()
     targets = list(data.columns[:])
 
     column_trans = ColumnTransformer(transformers=
@@ -760,12 +811,12 @@ def get_feature_importance(data):
     included_feats = []
     # Print the name and gini importance of each feature
     for feature in zip(targets, pipeline['clf'].feature_importances_):
-        if feature[1] > .05:
+        if feature[1] > threshold:
             included_feats.append(feature[0])
 
     # create DataFrame using data
     data_imp = pd.DataFrame(feat_list, columns =['FEATURE', 'IMPORTANCE']).sort_values(by='IMPORTANCE', ascending=False)
-    return data_imp
+    return [data_imp,included_feats]
 
 def get_least_significant_numerical_column(nums,data):
     for feature in nums:
@@ -773,7 +824,7 @@ def get_least_significant_numerical_column(nums,data):
             return data.loc[data['FEATURE'] == feature, 'FEATURE'].iloc[0]
 
 def remove_least_important_column(data):
-    feature_importance= get_feature_importance(data)
+    feature_importance= get_feature_importance(data)[0]
     numeric_columns=data.select_dtypes(include=['number']).columns
     if (dataset_has_sub_groups(data) or dataset_is_numiric(data)) and not dataset_is_one_numiric(data):
         least_important=get_least_significant_numerical_column(numeric_columns,feature_importance)

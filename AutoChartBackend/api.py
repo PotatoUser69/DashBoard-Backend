@@ -9,7 +9,6 @@ api = Api(app)
 CORS(app)
 
 dataset_names = []
-
 class Datasets(Resource):
     def get(self):
         dataset_names=files()
@@ -18,8 +17,8 @@ api.add_resource(Datasets, '/datasets')
 
 class Chart(Resource):
     def get(self,chart):
-        data=main(chart)
-        return {'data':data}
+        data,secondary=main(chart)
+        return {'data':data,"secondary":secondary}
 
 api.add_resource(Chart, '/chart/<string:chart>')
 
