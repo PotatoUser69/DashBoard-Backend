@@ -1,32 +1,130 @@
-from flask import Flask, jsonify,send_file
+import os
+import requests
+
+from dotenv import load_dotenv
+from flask import Flask, render_template, redirect, request, url_for
 from flask_cors import CORS
-from flask_restful import Resource, Api
-from determine_chart import files ,main
+from flask_login import (
+    LoginManager,
+    current_user,
+    login_required,
+    login_user,
+    logout_user,
+)
+
+from user import User
+
+load_dotenv('.env')
 
 app = Flask(__name__)
-api = Api(app)
-
+app.config.update({'SECRET_KEY': 'SomethingNotEntirelySecret'})
 CORS(app)
 
-dataset_names = []
-class Datasets(Resource):
-    def get(self):
-        dataset_names=files()
-        return {'labels': dataset_names}
-api.add_resource(Datasets, '/datasets')
+login_manager = LoginManager()
+login_manager.init_app(app)
 
-class Chart(Resource):
-    def get(self,chart):
-        data,secondary=main(chart)
-        return {'data':data,"secondary":secondary}
 
-api.add_resource(Chart, '/chart/<string:chart>')
+APP_STATE = 'ApplicationState'
+NONCE = 'SampleNonce'
 
-class HTMLRead(Resource):
-    def get(self,file):
-        return send_file(f'C:\\Users\\totti\\VSCodeProjects\\Flask\\AutoChartBackend\\charts\\{file}')
+@app.before_request
+def check_route_access():
+    if current_user.is_authenticated or request.path=="/login" or request.path=="/authorization-code/callback" or request.path=="/":
+        return  # Access granted
+    else:
+        return redirect(url_for('login'))
 
-api.add_resource(HTMLRead, '/htmlread/<string:file>')
+def public_route(decorated_function):
+    decorated_function.is_public = True
+    return decorated_function
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.get(user_id)
+
+
+@app.route("/")
+@public_route
+def hello():
+    return render_template("hello.html")
+
+
+@app.route("/login")
+@public_route
+def login():
+    # get request params
+    query_params = {'client_id': os.environ['CLIENT_ID'],
+                    'redirect_uri': "http://localhost:5000/authorization-code/callback",
+                    'scope': "openid email profile",
+                    'state': APP_STATE,
+                    'nonce': NONCE,
+                    'response_type': 'code',
+                    'response_mode': 'query'}
+
+    # build request_uri
+    request_uri = "{base_url}?{query_params}".format(
+        base_url=os.environ['API_BASE_URL']+"auth",
+        query_params=requests.compat.urlencode(query_params)
+    )
+
+    return redirect(request_uri)
+
+
+@app.route("/whoami")
+def whoami():
+    return render_template("whoami.html", user=current_user)
+
+
+@app.route("/authorization-code/callback")
+def callback():
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    code = request.args.get("code")
+    if not code:
+        return "The code was not returned or is not accessible", 403
+    query_params = {'grant_type': 'authorization_code',
+                    'code': code,
+                    'redirect_uri': request.base_url
+                    }
+    query_params = requests.compat.urlencode(query_params)
+    exchange = requests.post(
+        os.environ['API_BASE_URL'] + "token",
+        headers=headers,
+        data=query_params,
+        auth=(os.environ['CLIENT_ID'], os.environ['CLIENT_SECRET']),
+    ).json()
+
+    # Get tokens and validate
+    if not exchange.get("token_type"):
+        return "Unsupported token type. Should be 'Bearer'.", 403
+    access_token = exchange["access_token"]
+    id_token = exchange["id_token"]
+
+    # Authorization flow successful, get userinfo and login user
+    userinfo_response = requests.get(os.environ['API_BASE_URL'] + "userinfo",
+                                     headers={'Authorization': f'Bearer {access_token}'}).json()
+
+    unique_id = userinfo_response["sub"]
+    user_email = userinfo_response["email"]
+    user_name = userinfo_response["preferred_username"]
+
+    user = User(
+        id_=unique_id, name=user_name, email=user_email
+    )
+
+    if not User.get(unique_id):
+        User.create(unique_id, user_name, user_email)
+
+    login_user(user)
+
+    return redirect(url_for("whoami"))
+
+
+@app.route("/logout", methods=["GET", "POST"])
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("hello"))
+
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="localhost", port=5000, debug=True)

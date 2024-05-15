@@ -6,3 +6,5 @@ geonamescache
 scikit-learn
 flask-appbuilder
 flask-restful
+flask-pyoidc
+flask-cors
