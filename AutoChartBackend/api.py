@@ -2,7 +2,7 @@ import os
 import requests
 
 from dotenv import load_dotenv
-from flask import Flask, render_template, redirect, request, url_for
+from flask import Flask, render_template, redirect, request, url_for,make_response
 from flask_cors import CORS
 from flask_login import (
     LoginManager,
@@ -54,7 +54,7 @@ def hello():
 def login():
     # get request params
     query_params = {'client_id': os.environ['CLIENT_ID'],
-                    'redirect_uri': "http://localhost:5000/authorization-code/callback",
+                    'redirect_uri': "http://flask.cea.hexalogy.com/authorization-code/callback",
                     'scope': "openid email profile",
                     'state': APP_STATE,
                     'nonce': NONCE,
@@ -115,8 +115,10 @@ def callback():
         User.create(unique_id, user_name, user_email)
 
     login_user(user)
+    response = make_response({'token': access_token})
+    response.set_cookie('app_session', access_token, httponly=True, secure=True,domain="*.cea.hexalogy.com")
+    return response
 
-    return redirect(url_for("whoami"))
 
 
 @app.route("/logout", methods=["GET", "POST"])
@@ -127,4 +129,4 @@ def logout():
 
 
 if __name__ == '__main__':
-    app.run(host="localhost", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
