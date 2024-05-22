@@ -46,23 +46,21 @@ def choose_chart(data):
                 if dataset_has_few_categories(data) and dataset_has_few_similaire_values(data):
                     return pie(data)
                 #verify if categorical data have more then 6 values and have few similaire values
-                elif not dataset_has_few_categories(data) and dataset_has_few_similaire_values(data):
-                    return donut(data)
                 else:
                     return bar(data)
             elif dataset_is_two_numiric(data):
                 #verify if categorical data don't have any repeted values
-                if dataset_has_no_duplicate_values(data) and dataset_has_less_then_4_categories(data):
+                if dataset_has_no_duplicate_values(data) and dataset_has_less_then_5_categories(data):
                     return grouped_bar(data)
             elif dataset_is_three_numiric(data):
-                if dataset_has_no_duplicate_values(data) and dataset_has_less_then_4_categories(data):
+                if dataset_has_no_duplicate_values(data) and dataset_has_less_then_5_categories(data):
                     return grouped_bar(data)
                 return bubble_one_cat(data)
             elif dataset_is_several_numiric(data):
                 #verify if categorical data don't have any repeted values
                 if dataset_has_no_duplicate_values(data):
                     #verify if categorical data have less then 4 values
-                    if dataset_has_less_then_4_categories(data):
+                    if dataset_has_less_then_5_categories(data):
                         return radar(data)
                     return heatmap(data)
         elif dataset_is_two_categorie(data):
@@ -86,7 +84,7 @@ def choose_chart(data):
             return histogram(data)
         elif dataset_is_two_numiric(data):
             #verify if data have many values more then 400 data 
-            if dataset_has_many_or_few_point(data):
+            if dataset_has_less_then_30_point(data):
                 return histogram(data)
             return scatter(data)
         elif dataset_is_three_numiric(data):
@@ -317,6 +315,7 @@ def radar(data,ssecondary=False):
     if ssecondary==True:
         return file_path
     return [file_path,heatmap(data,True)]          
+
 def bubble(data,ssecondary=False):
     numeric_columns = data.select_dtypes(include=['number']).columns
     x = data[numeric_columns[0]]
@@ -357,6 +356,7 @@ def bubble(data,ssecondary=False):
     if ssecondary==True:
         return file_path
     return [file_path,'bubble.html']          
+
 def bubble_one_cat(data,ssecondary=False):
     numeric_columns = data.select_dtypes(include=['number']).columns
     categorie_column = data.select_dtypes(include=['object']).columns[0]
@@ -397,6 +397,7 @@ def bubble_one_cat(data,ssecondary=False):
     if ssecondary==True:
         return file_path
     return [file_path,bubble(data,True)]          
+
 def line(data,ssecondary=False):
     categorical_columns = data.select_dtypes(include=['object']).columns
     numeric_columns = data.select_dtypes(include=['number']).columns
@@ -470,6 +471,7 @@ def area(data,ssecondary=False):
     if ssecondary==True:
         return file_path
     return [file_path,line(data,True)]  
+
 def pie(data,ssecondary=False):
     categorical_columns = data.select_dtypes(include=['object']).columns
     numeric_columns = data.select_dtypes(include=['number']).columns
@@ -484,6 +486,7 @@ def pie(data,ssecondary=False):
 
     fig.update_layout(
         title='Pie Chart',
+        transition={'duration': 500, 'easing': 'cubic-in-out'}
     )  
     save_dir = 'charts'
     if not os.path.exists(save_dir):
@@ -496,6 +499,7 @@ def pie(data,ssecondary=False):
     if ssecondary==True:
         return file_path
     return [file_path,bar(data,True)]          
+
 def bar(data,ssecondary=False):
     categorical_columns = data.select_dtypes(include=['object']).columns
     numeric_columns = data.select_dtypes(include=['number']).columns
@@ -568,32 +572,7 @@ def grouped_bar(data,ssecondary=False):
     if ssecondary==True:
         return file_path
     return [file_path,line(data,True)]    
-def donut(data,ssecondary=False):
-    categorical_columns = data.select_dtypes(include=['object']).columns
-    numeric_columns = data.select_dtypes(include=['number']).columns
-    num_data = data[numeric_columns[0]]
-    labels = data[categorical_columns[0]]
-
-    fig = go.Figure(data=[go.Pie(
-        labels=labels,
-        values=num_data,
-        hole=0.6,  # Set the size of the hole for the donut chart
-    )])
-
-    fig.update_layout(
-        title="Donut Chart",
-    )
-    save_dir = 'charts'
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-
-    # Define the file path for saving the plot
-    file_path = 'donut.html'
-    fig.write_html(os.path.join(save_dir, file_path))  # Save the plot to an HTML file
-
-    if ssecondary==True:
-        return file_path
-    return [file_path,bar(data,True)]          
+       
 
 def dataset_has_sub_groups(data):
     categorical_columns = data.select_dtypes(include=['object']).columns
@@ -605,7 +584,6 @@ def large_dataset(data):
 def dataset_has_no_duplicate_values(data):
     categorical_columns = data.select_dtypes(include=['object']).columns
     return len(set(data[categorical_columns[0]]))==len(data[categorical_columns[0]])
-
 
 def IsTimeOrDate(input_str):
     formats = [
@@ -638,6 +616,7 @@ def dataset_is_time_series_data(data):
         if is_date_or_time_column:
             return True
     return False
+
 def is_column_countries(column_values):
     gc = GeonamesCache()
     countries = gc.get_countries_by_names()
@@ -656,9 +635,9 @@ def dataset_has_country_data(data):
             return True
     return False
 
-def dataset_has_many_or_few_point(data):
+def dataset_has_less_then_30_point(data):
     num_rows, num_columns = data.shape  
-    return (num_rows > 300 or num_rows < 50)
+    return (num_rows < 30)
 
 def dataset_is_categories_and_numeric_values(data):
     categorical_columns = data.select_dtypes(include=['object']).columns
@@ -685,11 +664,6 @@ def dataset_is_several_numiric(data):
     numeric_columns = data.select_dtypes(include=['number']).columns
     
     return len(numeric_columns) > 3
-
-def dataset_has_more_then_one_numiric(data):
-    numeric_columns = data.select_dtypes(include=['number']).columns
-    
-    return len(numeric_columns) > 1
 
 def dataset_is_one_categorie(data):
     categorical_columns = data.select_dtypes(include=['object']).columns
@@ -721,28 +695,19 @@ def dataset_is_categorical(data):
     
     return len(categorical_columns) > 0
 
-def dataset_has_one_value_per_categorie_group(data):
-    categorical_columns = [col for col in data.columns if data[col].dtype == 'object']
-    
-    for cat_col in categorical_columns:
-        if data[cat_col].duplicated().any():
-            return False  
-    
-    return True
-
-
 def dataset_has_few_categories(data):
     categorical_columns = [col for col in data.columns if data[col].dtype == 'object']
-    threshold = 5
+    threshold = 7
     for col in categorical_columns:
         unique_count = data[col].nunique()
         if unique_count > threshold:
             return False  
     
     return True
-def dataset_has_less_then_4_categories(data):
+
+def dataset_has_less_then_5_categories(data):
     categorical_columns = [col for col in data.columns if data[col].dtype == 'object']
-    threshold = 4
+    threshold = 5
     for col in categorical_columns:
         unique_count = data[col].nunique()
         if unique_count > threshold:

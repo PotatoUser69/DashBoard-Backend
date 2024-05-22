@@ -4,5 +4,5 @@ pycountry
 plotly
 geonamescache
 scikit-learn
-flask-appbuilder
+flask
 flask-restful
