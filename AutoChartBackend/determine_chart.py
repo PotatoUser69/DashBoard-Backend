@@ -116,9 +116,11 @@ def histogram(data,ssecondary=False):
 
     if ssecondary==True:
         return file_path
+    if len(data.columns)>1:
+        return [file_path,scatter(data,True)]
     return [file_path,'histogram.html']
 
-def CountryMap(data,ssecondary=False):
+def CountryMap(data, ssecondary=False):
     country_column = data.select_dtypes(include=['object']).columns[0]
     value_column = data.select_dtypes(include=['number']).columns[0]
     
@@ -136,11 +138,12 @@ def CountryMap(data,ssecondary=False):
     # Define the file path for saving the plot
     file_path = 'CountryMap.html'
 
-    fig.write_html(os.path.join(save_dir, file_path))   # Save the plot to an HTML file
+    # Save the plot to an HTML file with all necessary resources included
+    fig.write_html(os.path.join(save_dir, file_path), include_plotlyjs='cdn')
 
-    if ssecondary==True:
+    if ssecondary:
         return file_path
-    return [file_path,bar(data,True)]
+    return [file_path, bar(data, True)]
 
 def parallelCoordinates(data,ssecondary=False):
     categories = list(data.select_dtypes(include=['object']).columns)
@@ -180,7 +183,7 @@ def parallelCoordinates(data,ssecondary=False):
 def treemap(data,ssecondary=False):
     path=list(data.select_dtypes(include=['object']).columns)
     values=data.select_dtypes(include=['number']).columns[0]
-    fig = px.treemap(data, path=path, values=values,color=values,color_continuous_scale=['#6BAED6', '#08306B'])
+    fig = px.treemap(data, path=path, values=values)
     fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
     save_dir = 'charts'
     if not os.path.exists(save_dir):
@@ -243,9 +246,11 @@ def scatter(data,ssecondary=False):
         return file_path
     return [file_path,histogram(data,True)]  
 
-def heatmap(data,ssecondary=False):
+def heatmap(data, ssecondary=False):
     categorical_column = data.select_dtypes(include=['object']).columns[0]
+    pdata = data.copy()
     data.reset_index(inplace=True)  # Reset index so the categorical column can be accessed
+    
     fig = go.Figure(data=go.Heatmap(
         z=data.values,
         x=data.columns,
@@ -253,6 +258,7 @@ def heatmap(data,ssecondary=False):
         colorscale='Blues',  # Set the color scale
         hoverongaps=False
     ))
+    
     fig.update_layout(
         title='Heatmap',
         xaxis=dict(title='Column'),
@@ -267,18 +273,19 @@ def heatmap(data,ssecondary=False):
 
     # Define the file path for saving the plot
     file_path = 'heatmap.html'
-    fig.write_html(os.path.join(save_dir, file_path))  # Save the plot to an HTML file
+
+    # Save the plot to an HTML file with all necessary resources included
+    fig.write_html(os.path.join(save_dir, file_path), include_plotlyjs='cdn')
     with open(f'charts/{file_path}', 'w') as f:
         f.write(fig.to_html(full_html=False, include_plotlyjs='cdn'))  # Exclude Plotly JS
         f.write('<style>')
         f.write('body {')  # Opening body tag for CSS
         f.write('display: flex;justify-content: center;')  # Example CSS property
         f.write('}')
-        f.write('</style>') 
-    if ssecondary==True:
+        f.write('</style>')
+    if ssecondary:
         return file_path
-    return [file_path,radar(data,True)]          
-
+    return [file_path, radar(pdata, True)]  
 def radar(data,ssecondary=False):
     categorical_column = data.select_dtypes(include=['object']).columns[0]
     labels = list(data[categorical_column])
@@ -707,7 +714,7 @@ def dataset_has_few_categories(data):
 
 def dataset_has_less_then_5_categories(data):
     categorical_columns = [col for col in data.columns if data[col].dtype == 'object']
-    threshold = 5
+    threshold = 4
     for col in categorical_columns:
         unique_count = data[col].nunique()
         if unique_count > threshold:
